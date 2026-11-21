@@ -4,7 +4,6 @@
     "crawlee": "3.18.2",
     "es-toolkit": "1.53.2",
     "json2md": "2.0.3",
-    "playwright": "1.65.1",
-    "turndown": "7.2.5"
+    "playwright": "1.65.1"
   }
 }
