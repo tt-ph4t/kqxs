@@ -1,4 +1,4 @@
-# KẾT QUẢ XỔ SỐ MIỀN TRUNG (2026)
+# Kết quả xổ số miền Trung (2026)
 
 ## Tháng 11
 

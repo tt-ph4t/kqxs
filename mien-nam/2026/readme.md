@@ -1,4 +1,4 @@
-# KẾT QUẢ XỔ SỐ MIỀN NAM (2026)
+# Kết quả xổ số miền Nam (2026)
 
 ## Tháng 11
 
