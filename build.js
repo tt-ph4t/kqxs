@@ -16,8 +16,8 @@ const parseDateString = (value) =>
   );
 
 const regionLabels = {
-  "mien-nam": "miền nam",
-  "mien-trung": "miền trung",
+  "mien-nam": "miền Nam",
+  "mien-trung": "miền Trung",
 };
 
 const prizeLabels = {
@@ -85,7 +85,7 @@ const crawler = new PlaywrightCrawler({
       path.join(dir, "readme.md"),
       json2md([
         {
-          h1: `kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`.toUpperCase(),
+          h1: `Kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`,
         },
         pipe(
           data,
