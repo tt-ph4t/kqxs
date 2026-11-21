@@ -1,0 +1,27 @@
+name: build
+
+on:
+  schedule:
+    - cron: "0 14 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/setup@v1
+        with:
+          version: 12
+          runtime: node@latest
+
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec node build
+
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          file_pattern: "data.json readme.md"
