@@ -1,6 +1,7 @@
 import { PlaywrightCrawler } from "crawlee";
 import {
   identity,
+  isString,
   last,
   mapValues,
   round,
@@ -29,6 +30,19 @@ import path from "node:path";
 const locale = "vi";
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
 const medals = ["🥇", "🥈", "🥉"];
+
+const displayDate = (date = new Date(), weekday = true) => {
+  if (isString(date)) date = parseDateString(date);
+
+  const _date = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+
+  if (weekday)
+    return `${_date} (${date.toLocaleDateString("vi-VN", {
+      weekday: "long",
+    })})`;
+
+  return _date;
+};
 
 const parseDateString = (value) =>
   pipe(
@@ -86,8 +100,9 @@ const crawler = new PlaywrightCrawler({
       if (_data.length) data = JSON.parse(_data);
     }
 
-    data[`${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`] =
-      await boxKqxsLocator.locator("table.rightcl").evaluateAll((elements) =>
+    data[displayDate(date, false)] = await boxKqxsLocator
+      .locator("table.rightcl")
+      .evaluateAll((elements) =>
         elements.map((element) => ({
           tinh: element.querySelector("td.tinh").textContent.trim(),
           "ma-tinh": element.querySelector("td.matinh").textContent.trim(),
@@ -124,38 +139,31 @@ const crawler = new PlaywrightCrawler({
             {
               h2: `Tháng ${a}`,
             },
-            b.map(([a, b]) => {
-              const date = parseDateString(a);
+            b.map(([a, b]) => [
+              {
+                table: {
+                  headers: [
+                    displayDate(a),
+                    ...b.map(
+                      ({ tinh, ["ma-tinh"]: maTinh }) => `${tinh} (${maTinh})`,
+                    ),
+                  ],
+                  rows: b[0]["cac-giai"].map(({ giai }) => [
+                    prizeLabels[giai],
+                    ...b.map(({ ["cac-giai"]: cacGiai }) => {
+                      const { ["cac-so-trung-thuong"]: cacSoTrungThuong } =
+                        cacGiai.find(({ giai: _giai }) => _giai === giai);
 
-              return [
-                {
-                  table: {
-                    headers: [
-                      `${a} (${date.toLocaleDateString("vi-VN", {
-                        weekday: "long",
-                      })})`,
-                      ...b.map(
-                        ({ tinh, ["ma-tinh"]: maTinh }) =>
-                          `${tinh} (${maTinh})`,
-                      ),
-                    ],
-                    rows: b[0]["cac-giai"].map(({ giai }) => [
-                      prizeLabels[giai],
-                      ...b.map(({ ["cac-giai"]: cacGiai }) => {
-                        const { ["cac-so-trung-thuong"]: cacSoTrungThuong } =
-                          cacGiai.find(({ giai: _giai }) => _giai === giai);
-
-                        return pipe(
-                          cacSoTrungThuong,
-                          map((a) => `\`${a}\``),
-                          join(" "),
-                        );
-                      }),
-                    ]),
-                  },
+                      return pipe(
+                        cacSoTrungThuong,
+                        map((a) => `\`${a}\``),
+                        join(" "),
+                      );
+                    }),
+                  ]),
                 },
-              ];
-            }),
+              },
+            ]),
           ]),
         ),
       ]),
@@ -239,6 +247,9 @@ await crawler.run(
   fs.writeFileSync(
     "readme.md",
     json2md([
+      {
+        blockquote: displayDate(),
+      },
       {
         img: {
           source:
