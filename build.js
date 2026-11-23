@@ -174,7 +174,9 @@ await crawler.run(
 );
 
 {
-  const aaaaaaaaa = (a, b, unit = "lượt") => {
+  const frequencyUnit = "lượt";
+
+  const aaaaaaaaa = (a, b, unit = frequencyUnit) => {
     const label = `${a} ${unit}`;
 
     if (a) return `${label} (${round((a / b) * 100, 1)}%)`;
@@ -224,10 +226,15 @@ await crawler.run(
 
   const totalFrequency = pipe(regionTotalFrequencies, Object.values, sum);
 
-  const maxRows = Math.min(
-    1000,
-    pipe(data, Object.values, flatMapDeep(Object.keys), uniq(), size),
+  const rowCount = pipe(
+    data,
+    Object.values,
+    flatMapDeep(Object.keys),
+    uniq(),
+    size,
   );
+
+  const maxRows = Math.min(1000, rowCount);
 
   fs.writeFileSync(
     "readme.md",
@@ -244,14 +251,14 @@ await crawler.run(
       {
         table: {
           headers: [
-            `${maxRows} số`,
+            `${maxRows}/${rowCount} số`,
             ...pipe(
               data,
               Object.keys,
               map((a) => regionLabels[a]),
               map(startCase),
             ),
-            "Tổng",
+            `Tổng (${totalFrequency} ${frequencyUnit})`,
           ],
           rows: pipe(
             data,
