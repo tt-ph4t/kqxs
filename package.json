@@ -3,6 +3,7 @@
   "devDependencies": {
     "crawlee": "3.18.2",
     "es-toolkit": "1.53.2",
+    "fast-glob": "3.3.3",
     "json2md": "2.0.3",
     "playwright": "1.65.1"
   }

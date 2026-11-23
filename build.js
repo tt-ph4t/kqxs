@@ -1,10 +1,32 @@
 import { PlaywrightCrawler } from "crawlee";
-import { mapValues } from "es-toolkit";
-import { groupBy, join, map, pipe } from "es-toolkit/fp";
+import {
+  identity,
+  last,
+  mapValues,
+  round,
+  startCase,
+  sum,
+  union,
+} from "es-toolkit";
+import { size } from "es-toolkit/compat";
+import {
+  countBy,
+  flatMapDeep,
+  forEach,
+  groupBy,
+  join,
+  map,
+  pipe,
+  take,
+  uniq,
+} from "es-toolkit/fp";
+import { some } from "es-toolkit/fp/iterator";
+import fg from "fast-glob";
 import json2md from "json2md";
 import fs from "node:fs";
 import path from "node:path";
 
+const locale = "vi";
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
 
 const parseDateString = (value) =>
@@ -143,5 +165,133 @@ const crawler = new PlaywrightCrawler({
 });
 
 await crawler.run(
-  Object.keys(regionLabels).map((path) => `${url}/${path}.html`),
+  pipe(
+    regionLabels,
+    Object.keys,
+    map((a) => `${url}/${a}.html`),
+  ),
 );
+
+{
+  const aaaaaaaaa = (a, b, unit = "lượt") => {
+    const label = `${a} ${unit}`;
+
+    if (a) return `${label} (${round((a / b) * 100, 1)}%)`;
+
+    return label;
+  };
+
+  let data = {};
+
+  data = pipe(
+    "**/data.json",
+    fg.sync,
+    forEach((a) => {
+      pipe(
+        regionLabels,
+        Object.keys,
+        some((region) => {
+          const ok = a.includes(region);
+
+          if (ok) {
+            data[region] = pipe(
+              a,
+              fs.readFileSync,
+              JSON.parse,
+              Object.values,
+              flatMapDeep((a) =>
+                a.map(({ ["cac-giai"]: cacGiai }) =>
+                  cacGiai.map(
+                    ({ ["cac-so-trung-thuong"]: cacSoTrungThuong }) =>
+                      cacSoTrungThuong,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return ok;
+        }),
+      );
+    }),
+    () => mapValues(data, (a) => pipe(a, countBy(identity))),
+  );
+
+  const regionTotalFrequencies = mapValues(data, (a) =>
+    pipe(a, Object.values, sum),
+  );
+
+  const totalFrequency = pipe(regionTotalFrequencies, Object.values, sum);
+
+  const maxRows = Math.min(
+    1000,
+    pipe(data, Object.values, flatMapDeep(Object.keys), uniq(), size),
+  );
+
+  fs.writeFileSync(
+    "readme.md",
+    json2md([
+      {
+        img: {
+          source:
+            "https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg",
+        },
+      },
+      {
+        h1: "Tần suất",
+      },
+      {
+        table: {
+          headers: [
+            `${maxRows} số`,
+            ...pipe(
+              data,
+              Object.keys,
+              map((a) => regionLabels[a]),
+              map(startCase),
+            ),
+            "Tổng",
+          ],
+          rows: pipe(
+            data,
+            Object.values,
+            map(Object.keys),
+            (a) => union(...a),
+            map((a) => [
+              a,
+              ...pipe(
+                data,
+                Object.keys,
+                map((b) =>
+                  aaaaaaaaa(data[b][a] ?? 0, regionTotalFrequencies[b]),
+                ),
+              ),
+              aaaaaaaaa(
+                pipe(
+                  data,
+                  Object.keys,
+                  map((b) => data[b][a] ?? 0),
+                  sum,
+                ),
+                totalFrequency,
+              ),
+            ]),
+            (a) =>
+              a.sort(
+                (a, b) =>
+                  last(b).localeCompare(last(a), locale, {
+                    numeric: true,
+                    sensitivity: "base",
+                  }) ||
+                  a[0].localeCompare(b[0], locale, {
+                    numeric: true,
+                    sensitivity: "base",
+                  }),
+              ),
+            take(maxRows),
+          ),
+        },
+      },
+    ]),
+  );
+}
