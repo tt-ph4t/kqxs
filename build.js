@@ -28,6 +28,7 @@ import path from "node:path";
 
 const locale = "vi";
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
+const medals = ["🥇", "🥈", "🥉"];
 
 const parseDateString = (value) =>
   pipe(
@@ -288,6 +289,10 @@ await crawler.run(
                     sensitivity: "base",
                   }),
               ),
+            map(([a, ...rest], index) => [
+              `${medals[index] ?? ""} ${a}`,
+              ...rest,
+            ]),
             take(maxRows),
           ),
         },
