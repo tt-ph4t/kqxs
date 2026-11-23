@@ -27,7 +27,7 @@ import json2md from "json2md";
 import fs from "node:fs";
 import path from "node:path";
 
-const locale = "vi";
+const locale = "vi-VN";
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
 const medals = ["🥇", "🥈", "🥉"];
 
@@ -37,7 +37,7 @@ const displayDate = (date = new Date(), weekday = true) => {
   const _date = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 
   if (weekday)
-    return `${_date} (${date.toLocaleDateString("vi-VN", {
+    return `${_date} (${date.toLocaleDateString(locale, {
       weekday: "long",
     })})`;
 
