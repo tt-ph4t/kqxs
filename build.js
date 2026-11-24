@@ -12,6 +12,7 @@ import {
 import { size } from "es-toolkit/compat";
 import {
   countBy,
+  filter,
   flatMapDeep,
   forEach,
   groupBy,
@@ -21,7 +22,6 @@ import {
   take,
   uniq,
 } from "es-toolkit/fp";
-import { some } from "es-toolkit/fp/iterator";
 import fg from "fast-glob";
 import json2md from "json2md";
 import fs from "node:fs";
@@ -67,6 +67,30 @@ const prizeLabels = {
   2: "Giải nhì",
   1: "Giải nhất",
   db: "Giải Đặc Biệt",
+};
+
+const eachRegion = (fn) => {
+  pipe(
+    "**/data.json",
+    fg.sync,
+    filter((a) =>
+      Object.keys(regionLabels).some((region) => a.startsWith(`${region}/`)),
+    ),
+    forEach((a) => {
+      const parsedPath = path.posix.parse(a);
+
+      fn({
+        data: pipe(a, fs.readFileSync, JSON.parse),
+        meta: pipe(
+          path.join(parsedPath.dir, "meta.json"),
+          fs.readFileSync,
+          JSON.parse,
+        ),
+        dir: parsedPath.dir,
+        region: pipe(parsedPath.dir, path.dirname),
+      });
+    }),
+  );
 };
 
 const crawler = new PlaywrightCrawler({
@@ -119,57 +143,14 @@ const crawler = new PlaywrightCrawler({
         })),
       );
 
-    fs.writeFileSync(
-      path.join(dir, "readme.md"),
-      json2md([
-        {
-          h1: `Kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`,
-        },
-        pipe(
-          data,
-          Object.entries,
-          groupBy(([a]) => parseDateString(a).getMonth() + 1),
-          (a) =>
-            mapValues(a, (a) =>
-              a.sort(([a], [b]) => parseDateString(b) - parseDateString(a)),
-            ),
-          Object.entries,
-          (a) => a.sort(([a], [b]) => Number(b) - Number(a)),
-          map(([a, b]) => [
-            {
-              h2: `Tháng ${a}`,
-            },
-            b.map(([a, b]) => [
-              {
-                table: {
-                  headers: [
-                    displayDate(a),
-                    ...b.map(
-                      ({ tinh, ["ma-tinh"]: maTinh }) => `${tinh} (${maTinh})`,
-                    ),
-                  ],
-                  rows: b[0]["cac-giai"].map(({ giai }) => [
-                    prizeLabels[giai],
-                    ...b.map(({ ["cac-giai"]: cacGiai }) => {
-                      const { ["cac-so-trung-thuong"]: cacSoTrungThuong } =
-                        cacGiai.find(({ giai: _giai }) => _giai === giai);
-
-                      return pipe(
-                        cacSoTrungThuong,
-                        map((a) => `\`${a}\``),
-                        join(" "),
-                      );
-                    }),
-                  ]),
-                },
-              },
-            ]),
-          ]),
-        ),
-      ]),
-    );
-
     fs.writeFileSync(dataPath, JSON.stringify(data));
+
+    fs.writeFileSync(
+      path.join(dir, "meta.json"),
+      JSON.stringify({
+        title: `Kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`,
+      }),
+    );
   },
 });
 
@@ -180,6 +161,58 @@ await crawler.run(
     map((a) => `${url}/${a}.html`),
   ),
 );
+
+eachRegion(({ data, meta, dir }) => {
+  fs.writeFileSync(
+    path.join(dir, "readme.md"),
+    json2md([
+      {
+        h1: meta.title,
+      },
+      pipe(
+        data,
+        Object.entries,
+        groupBy(([a]) => parseDateString(a).getMonth() + 1),
+        (a) =>
+          mapValues(a, (a) =>
+            a.sort(([a], [b]) => parseDateString(b) - parseDateString(a)),
+          ),
+        Object.entries,
+        (a) => a.sort(([a], [b]) => Number(b) - Number(a)),
+        map(([a, b]) => [
+          {
+            h2: `Tháng ${a}`,
+          },
+          b.map(([a, b]) => [
+            {
+              table: {
+                headers: [
+                  displayDate(a),
+                  ...b.map(
+                    ({ tinh, ["ma-tinh"]: maTinh }) => `${tinh} (${maTinh})`,
+                  ),
+                ],
+                rows: b[0]["cac-giai"].map(({ giai }) => [
+                  prizeLabels[giai],
+                  ...b.map(({ ["cac-giai"]: cacGiai }) => {
+                    const { ["cac-so-trung-thuong"]: cacSoTrungThuong } =
+                      cacGiai.find(({ giai: _giai }) => _giai === giai);
+
+                    return pipe(
+                      cacSoTrungThuong,
+                      map((a) => `\`${a}\``),
+                      join(" "),
+                    );
+                  }),
+                ]),
+              },
+            },
+          ]),
+        ]),
+      ),
+    ]),
+  );
+});
 
 {
   const frequencyUnit = "lượt";
@@ -194,39 +227,21 @@ await crawler.run(
 
   let data = {};
 
-  data = pipe(
-    "**/data.json",
-    fg.sync,
-    forEach((a) => {
-      pipe(
-        regionLabels,
-        Object.keys,
-        some((region) => {
-          const ok = a.includes(region);
+  eachRegion(({ region, data: _data }) => {
+    data[region] = pipe(
+      _data,
+      Object.values,
+      flatMapDeep((a) =>
+        a.map(({ ["cac-giai"]: cacGiai }) =>
+          cacGiai.map(
+            ({ ["cac-so-trung-thuong"]: cacSoTrungThuong }) => cacSoTrungThuong,
+          ),
+        ),
+      ),
+    );
+  });
 
-          if (ok) {
-            data[region] = pipe(
-              a,
-              fs.readFileSync,
-              JSON.parse,
-              Object.values,
-              flatMapDeep((a) =>
-                a.map(({ ["cac-giai"]: cacGiai }) =>
-                  cacGiai.map(
-                    ({ ["cac-so-trung-thuong"]: cacSoTrungThuong }) =>
-                      cacSoTrungThuong,
-                  ),
-                ),
-              ),
-            );
-          }
-
-          return ok;
-        }),
-      );
-    }),
-    () => mapValues(data, (a) => pipe(a, countBy(identity))),
-  );
+  data = mapValues(data, (a) => pipe(a, countBy(identity)));
 
   const regionTotalFrequencies = mapValues(data, (a) =>
     pipe(a, Object.values, sum),
