@@ -1,9 +1,11 @@
+import { readFileSync, writeFileSync } from "atomically";
 import { PlaywrightCrawler } from "crawlee";
 import {
   identity,
   isString,
   last,
   mapValues,
+  noop,
   round,
   startCase,
   sum,
@@ -69,7 +71,7 @@ const prizeLabels = {
   db: "Giải Đặc Biệt",
 };
 
-const eachRegion = (fn) => {
+const eachRegion = (fn = noop) => {
   pipe(
     "**/data.json",
     fg.sync,
@@ -80,10 +82,10 @@ const eachRegion = (fn) => {
       const parsedPath = path.posix.parse(a);
 
       fn({
-        data: pipe(a, fs.readFileSync, JSON.parse),
+        data: pipe(a, readFileSync, JSON.parse),
         meta: pipe(
           path.join(parsedPath.dir, "meta.json"),
-          fs.readFileSync,
+          readFileSync,
           JSON.parse,
         ),
         dir: parsedPath.dir,
@@ -119,7 +121,7 @@ const crawler = new PlaywrightCrawler({
     let data = {};
 
     if (fs.existsSync(dataPath)) {
-      const _data = fs.readFileSync(dataPath);
+      const _data = readFileSync(dataPath);
 
       if (_data.length) data = JSON.parse(_data);
     }
@@ -143,9 +145,9 @@ const crawler = new PlaywrightCrawler({
         })),
       );
 
-    fs.writeFileSync(dataPath, JSON.stringify(data));
+    writeFileSync(dataPath, JSON.stringify(data));
 
-    fs.writeFileSync(
+    writeFileSync(
       path.join(dir, "meta.json"),
       JSON.stringify({
         title: `Kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`,
@@ -163,7 +165,7 @@ await crawler.run(
 );
 
 eachRegion(({ data, meta, dir }) => {
-  fs.writeFileSync(
+  writeFileSync(
     path.join(dir, "readme.md"),
     json2md([
       {
@@ -259,7 +261,7 @@ eachRegion(({ data, meta, dir }) => {
 
   const maxRows = Math.min(1000, rowCount);
 
-  fs.writeFileSync(
+  writeFileSync(
     "readme.md",
     json2md([
       {
