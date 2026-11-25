@@ -2,7 +2,15 @@
 
 ![](https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg "")
 
-# Tần suất
+## Tương quan chẵn lẻ
+
+|     | Chẵn | Lẻ  | Tổng |
+| --- | ---- | --- | ---- |
+| Miền Nam | 129 lượt (44.8%) | 159 lượt (55.2%) | 288 lượt |
+| Miền Trung | 99 lượt (45.8%) | 117 lượt (54.2%) | 216 lượt |
+| Tổng | 228 lượt (45.2%) | 276 lượt (54.8%) | 504 lượt |
+
+## Tần suất
 
 | 501/501 số | Miền Nam | Miền Trung | Tổng (504 lượt) |
 | ---------- | -------- | ---------- | --------------- |
