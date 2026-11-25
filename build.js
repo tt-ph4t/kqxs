@@ -26,6 +26,7 @@ import {
   take,
   uniq,
 } from "es-toolkit/fp";
+import { reduce } from "es-toolkit/fp/iterator";
 import fg from "fast-glob";
 import json2md from "json2md";
 import fs from "node:fs";
@@ -263,6 +264,31 @@ eachRegion(({ data, meta, dir }) => {
     );
   });
 
+  const parityFrequencies = mapValues(data, (a) =>
+    pipe(
+      a,
+      groupBy((a) => (a % 2 ? "odd" : "even")),
+      (a) => mapValues(a, size),
+    ),
+  );
+
+  const totalParityFrequencies = pipe(
+    parityFrequencies,
+    Object.values,
+    reduce(
+      (a, b) => ({
+        even: a.even + b.even,
+        odd: a.odd + b.odd,
+      }),
+      {
+        even: 0,
+        odd: 0,
+      },
+    ),
+  );
+
+  const totalParityCount = sum(Object.values(totalParityFrequencies));
+
   data = mapValues(data, (a) => pipe(a, countBy(identity)));
 
   const regionTotalFrequencies = mapValues(data, (a) =>
@@ -294,7 +320,37 @@ eachRegion(({ data, meta, dir }) => {
         },
       },
       {
-        h1: "Tần suất",
+        h2: "Tương quan chẵn lẻ",
+      },
+      {
+        table: {
+          headers: ["", "Chẵn", "Lẻ", "Tổng"],
+          rows: [
+            ...pipe(
+              parityFrequencies,
+              Object.entries,
+              map(([a, b]) => {
+                const total = pipe(b, Object.values, sum);
+
+                return [
+                  startCase(regionLabels[a]),
+                  aaaaaaaaa(b.even, total),
+                  aaaaaaaaa(b.odd, total),
+                  `${total} ${frequencyUnit}`,
+                ];
+              }),
+            ),
+            [
+              "Tổng",
+              aaaaaaaaa(totalParityFrequencies.even, totalParityCount),
+              aaaaaaaaa(totalParityFrequencies.odd, totalParityCount),
+              `${totalParityCount} ${frequencyUnit}`,
+            ],
+          ],
+        },
+      },
+      {
+        h2: "Tần suất",
       },
       {
         table: {
