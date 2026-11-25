@@ -31,7 +31,7 @@ import fg from "fast-glob";
 import json2md from "json2md";
 import fs from "node:fs";
 import path from "node:path";
-import * as v from "valibot";
+import * as valibot from "valibot";
 
 const locale = "vi-VN";
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
@@ -39,7 +39,7 @@ const medals = ["🥇", "🥈", "🥉"];
 const stringify = flow(sortKeys, JSON.stringify);
 
 const displayDate = (date = new Date(), weekday = true) => {
-  if (isString(date)) date = parseDateString(date);
+  if (isString(date)) date = parseDate(date);
 
   const _date = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 
@@ -51,7 +51,7 @@ const displayDate = (date = new Date(), weekday = true) => {
   return _date;
 };
 
-const parseDateString = (value) =>
+const parseDate = (value) =>
   pipe(
     value,
     (a) => a.split("/"),
@@ -76,7 +76,7 @@ const prizeLabels = {
   db: "Giải Đặc Biệt",
 };
 
-const eachRegion = (fn = noop) => {
+const forEachRegion = (fn = noop) => {
   pipe(
     "**/data.json",
     fg.sync,
@@ -101,24 +101,26 @@ const eachRegion = (fn = noop) => {
 };
 
 {
-  const schema = v.array(
-    v.strictObject({
-      tinh: v.pipe(v.string(), v.minLength(1)),
-      "ma-tinh": v.pipe(v.string(), v.minLength(1)),
-      "cac-giai": v.array(
-        v.strictObject({
-          giai: v.picklist(Object.keys(prizeLabels)),
-          "cac-so-trung-thuong": v.array(v.pipe(v.string(), v.minLength(1))),
+  const schema = valibot.array(
+    valibot.strictObject({
+      tinh: valibot.pipe(valibot.string(), valibot.minLength(1)),
+      "ma-tinh": valibot.pipe(valibot.string(), valibot.minLength(1)),
+      "cac-giai": valibot.array(
+        valibot.strictObject({
+          giai: valibot.picklist(Object.keys(prizeLabels)),
+          "cac-so-trung-thuong": valibot.array(
+            valibot.pipe(valibot.string(), valibot.minLength(1)),
+          ),
         }),
       ),
     }),
   );
 
-  const crawler = new PlaywrightCrawler({
+  const playwrightCrawler = new PlaywrightCrawler({
     async requestHandler({ request, page }) {
       const boxKqxsLocator = page.locator(".box_kqxs").first();
 
-      const date = parseDateString(
+      const date = parseDate(
         await boxKqxsLocator.locator(".top .title a").nth(1).textContent(),
       );
 
@@ -145,7 +147,7 @@ const eachRegion = (fn = noop) => {
         if (_data.length) data = JSON.parse(_data);
       }
 
-      data[displayDate(date, false)] = v.parse(
+      data[displayDate(date, false)] = valibot.parse(
         schema,
         await boxKqxsLocator.locator("table.rightcl").evaluateAll((elements) =>
           elements.map((element) => ({
@@ -176,7 +178,7 @@ const eachRegion = (fn = noop) => {
     },
   });
 
-  await crawler.run(
+  await playwrightCrawler.run(
     pipe(
       regionLabels,
       Object.keys,
@@ -185,7 +187,7 @@ const eachRegion = (fn = noop) => {
   );
 }
 
-eachRegion(({ data, meta, dir }) => {
+forEachRegion(({ data, meta, dir }) => {
   writeFileSync(
     path.join(dir, "readme.md"),
     json2md([
@@ -195,10 +197,10 @@ eachRegion(({ data, meta, dir }) => {
       pipe(
         data,
         Object.entries,
-        groupBy(([a]) => parseDateString(a).getMonth() + 1),
+        groupBy(([a]) => parseDate(a).getMonth() + 1),
         (a) =>
           mapValues(a, (a) =>
-            a.sort(([a], [b]) => parseDateString(b) - parseDateString(a)),
+            a.sort(([a], [b]) => parseDate(b) - parseDate(a)),
           ),
         Object.entries,
         (a) => a.sort(([a], [b]) => Number(b) - Number(a)),
@@ -240,7 +242,7 @@ eachRegion(({ data, meta, dir }) => {
 {
   const frequencyUnit = "lượt";
 
-  const aaaaaaaaa = (a, b, unit = frequencyUnit) => {
+  const formatFrequency = (a, b, unit = frequencyUnit) => {
     const label = `${a} ${unit}`;
 
     if (a) return `${label} (${round((a / b) * 100, 1)}%)`;
@@ -248,10 +250,10 @@ eachRegion(({ data, meta, dir }) => {
     return label;
   };
 
-  let data = {};
+  const numbersByRegion = {};
 
-  eachRegion(({ region, data: _data }) => {
-    data[region] = pipe(
+  forEachRegion(({ region, data: _data }) => {
+    numbersByRegion[region] = pipe(
       _data,
       Object.values,
       flatMapDeep((a) =>
@@ -264,7 +266,11 @@ eachRegion(({ data, meta, dir }) => {
     );
   });
 
-  const parityFrequencies = mapValues(data, (a) =>
+  const frequencyByRegion = mapValues(numbersByRegion, (a) =>
+    pipe(a, countBy(identity)),
+  );
+
+  const data3_1 = mapValues(numbersByRegion, (a) =>
     pipe(
       a,
       groupBy((a) => (a % 2 ? "odd" : "even")),
@@ -272,8 +278,8 @@ eachRegion(({ data, meta, dir }) => {
     ),
   );
 
-  const totalParityFrequencies = pipe(
-    parityFrequencies,
+  const data3_2 = pipe(
+    data3_1,
     Object.values,
     reduce(
       (a, b) => ({
@@ -287,18 +293,16 @@ eachRegion(({ data, meta, dir }) => {
     ),
   );
 
-  const totalParityCount = sum(Object.values(totalParityFrequencies));
+  const data3_3 = sum(Object.values(data3_2));
 
-  data = mapValues(data, (a) => pipe(a, countBy(identity)));
-
-  const regionTotalFrequencies = mapValues(data, (a) =>
+  const totalFrequencyByRegion = mapValues(frequencyByRegion, (a) =>
     pipe(a, Object.values, sum),
   );
 
-  const totalFrequency = pipe(regionTotalFrequencies, Object.values, sum);
+  const totalFrequency = pipe(totalFrequencyByRegion, Object.values, sum);
 
   const rowCount = pipe(
-    data,
+    frequencyByRegion,
     Object.values,
     flatMapDeep(Object.keys),
     uniq(),
@@ -327,24 +331,24 @@ eachRegion(({ data, meta, dir }) => {
           headers: ["", "Chẵn", "Lẻ", "Tổng"],
           rows: [
             ...pipe(
-              parityFrequencies,
+              data3_1,
               Object.entries,
               map(([a, b]) => {
                 const total = pipe(b, Object.values, sum);
 
                 return [
                   startCase(regionLabels[a]),
-                  aaaaaaaaa(b.even, total),
-                  aaaaaaaaa(b.odd, total),
+                  formatFrequency(b.even, total),
+                  formatFrequency(b.odd, total),
                   `${total} ${frequencyUnit}`,
                 ];
               }),
             ),
             [
               "Tổng",
-              aaaaaaaaa(totalParityFrequencies.even, totalParityCount),
-              aaaaaaaaa(totalParityFrequencies.odd, totalParityCount),
-              `${totalParityCount} ${frequencyUnit}`,
+              formatFrequency(data3_2.even, data3_3),
+              formatFrequency(data3_2.odd, data3_3),
+              `${data3_3} ${frequencyUnit}`,
             ],
           ],
         },
@@ -357,7 +361,7 @@ eachRegion(({ data, meta, dir }) => {
           headers: [
             `${maxRows}/${rowCount} số`,
             ...pipe(
-              data,
+              frequencyByRegion,
               Object.keys,
               map((a) => regionLabels[a]),
               map(startCase),
@@ -365,24 +369,27 @@ eachRegion(({ data, meta, dir }) => {
             `Tổng (${totalFrequency} ${frequencyUnit})`,
           ],
           rows: pipe(
-            data,
+            frequencyByRegion,
             Object.values,
             map(Object.keys),
             (a) => union(...a),
             map((a) => [
               a,
               ...pipe(
-                data,
+                frequencyByRegion,
                 Object.keys,
                 map((b) =>
-                  aaaaaaaaa(data[b][a] ?? 0, regionTotalFrequencies[b]),
+                  formatFrequency(
+                    frequencyByRegion[b][a] ?? 0,
+                    totalFrequencyByRegion[b],
+                  ),
                 ),
               ),
-              aaaaaaaaa(
+              formatFrequency(
                 pipe(
-                  data,
+                  frequencyByRegion,
                   Object.keys,
-                  map((b) => data[b][a] ?? 0),
+                  map((b) => frequencyByRegion[b][a] ?? 0),
                   sum,
                 ),
                 totalFrequency,
