@@ -1,12 +1,14 @@
 import { readFileSync, writeFileSync } from "atomically";
 import { PlaywrightCrawler } from "crawlee";
 import {
+  flow,
   identity,
   isString,
   last,
   mapValues,
   noop,
   round,
+  sortKeys,
   startCase,
   sum,
   union,
@@ -28,10 +30,12 @@ import fg from "fast-glob";
 import json2md from "json2md";
 import fs from "node:fs";
 import path from "node:path";
+import * as v from "valibot";
 
 const locale = "vi-VN";
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
 const medals = ["🥇", "🥈", "🥉"];
+const stringify = flow(sortKeys, JSON.stringify);
 
 const displayDate = (date = new Date(), weekday = true) => {
   if (isString(date)) date = parseDateString(date);
@@ -95,74 +99,90 @@ const eachRegion = (fn = noop) => {
   );
 };
 
-const crawler = new PlaywrightCrawler({
-  async requestHandler({ request, page }) {
-    const boxKqxsLocator = page.locator(".box_kqxs").first();
+{
+  const schema = v.array(
+    v.strictObject({
+      tinh: v.pipe(v.string(), v.minLength(1)),
+      "ma-tinh": v.pipe(v.string(), v.minLength(1)),
+      "cac-giai": v.array(
+        v.strictObject({
+          giai: v.picklist(Object.keys(prizeLabels)),
+          "cac-so-trung-thuong": v.array(v.pipe(v.string(), v.minLength(1))),
+        }),
+      ),
+    }),
+  );
 
-    const date = parseDateString(
-      await boxKqxsLocator.locator(".top .title a").nth(1).textContent(),
-    );
+  const crawler = new PlaywrightCrawler({
+    async requestHandler({ request, page }) {
+      const boxKqxsLocator = page.locator(".box_kqxs").first();
 
-    await boxKqxsLocator.locator(".giaiSo").first().waitFor();
-
-    const region = new URL(request.url).pathname
-      .split("/")
-      .at(-1)
-      .replace(".html", "");
-
-    const dir = path.join(region, String(date.getFullYear()));
-
-    fs.mkdirSync(dir, {
-      recursive: true,
-    });
-
-    const dataPath = path.join(dir, "data.json");
-
-    let data = {};
-
-    if (fs.existsSync(dataPath)) {
-      const _data = readFileSync(dataPath);
-
-      if (_data.length) data = JSON.parse(_data);
-    }
-
-    data[displayDate(date, false)] = await boxKqxsLocator
-      .locator("table.rightcl")
-      .evaluateAll((elements) =>
-        elements.map((element) => ({
-          tinh: element.querySelector("td.tinh").textContent.trim(),
-          "ma-tinh": element.querySelector("td.matinh").textContent.trim(),
-          "cac-giai": Array.from(
-            element.querySelectorAll("td[class^=giai]"),
-            (element) => ({
-              giai: element.className.split("giai")[1],
-              "cac-so-trung-thuong": Array.from(
-                element.querySelectorAll(".giaiSo"),
-                (element) => element.getAttribute("data"),
-              ),
-            }),
-          ),
-        })),
+      const date = parseDateString(
+        await boxKqxsLocator.locator(".top .title a").nth(1).textContent(),
       );
 
-    writeFileSync(dataPath, JSON.stringify(data));
+      await boxKqxsLocator.locator(".giaiSo").first().waitFor();
 
-    writeFileSync(
-      path.join(dir, "meta.json"),
-      JSON.stringify({
-        title: `Kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`,
-      }),
-    );
-  },
-});
+      const region = new URL(request.url).pathname
+        .split("/")
+        .at(-1)
+        .replace(".html", "");
 
-await crawler.run(
-  pipe(
-    regionLabels,
-    Object.keys,
-    map((a) => `${url}/${a}.html`),
-  ),
-);
+      const dir = path.join(region, String(date.getFullYear()));
+
+      fs.mkdirSync(dir, {
+        recursive: true,
+      });
+
+      const dataPath = path.join(dir, "data.json");
+
+      let data = {};
+
+      if (fs.existsSync(dataPath)) {
+        const _data = readFileSync(dataPath);
+
+        if (_data.length) data = JSON.parse(_data);
+      }
+
+      data[displayDate(date, false)] = v.parse(
+        schema,
+        await boxKqxsLocator.locator("table.rightcl").evaluateAll((elements) =>
+          elements.map((element) => ({
+            tinh: element.querySelector("td.tinh").textContent.trim(),
+            "ma-tinh": element.querySelector("td.matinh").textContent.trim(),
+            "cac-giai": Array.from(
+              element.querySelectorAll("td[class^=giai]"),
+              (element) => ({
+                giai: element.className.split("giai")[1],
+                "cac-so-trung-thuong": Array.from(
+                  element.querySelectorAll(".giaiSo"),
+                  (element) => element.getAttribute("data"),
+                ),
+              }),
+            ),
+          })),
+        ),
+      );
+
+      writeFileSync(dataPath, stringify(data));
+
+      writeFileSync(
+        path.join(dir, "meta.json"),
+        stringify({
+          title: `Kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`,
+        }),
+      );
+    },
+  });
+
+  await crawler.run(
+    pipe(
+      regionLabels,
+      Object.keys,
+      map((a) => `${url}/${a}.html`),
+    ),
+  );
+}
 
 eachRegion(({ data, meta, dir }) => {
   writeFileSync(

@@ -26,6 +26,9 @@ importers:
       playwright:
         specifier: 1.65.1
         version: 1.65.1
+      valibot:
+        specifier: 1.5.0
+        version: 1.5.0
 
 packages:
 
@@ -1213,6 +1216,14 @@ packages:
   vali-date@1.0.0:
     resolution: {integrity: sha512-sgECfZthyaCKW10N0fm27cg8HYTFK5qMWgypqkXMQ4Wbl/zZKx7xZICgcoxIIE+WFAP/MBL2EFwC/YvLxw3Zeg==}
     engines: {node: '>=0.10.0'}
+
+  valibot@1.5.0:
+    resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   w3c-xmlserializer@5.0.0:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
@@ -2641,6 +2652,8 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   vali-date@1.0.0: {}
+
+  valibot@1.5.0: {}
 
   w3c-xmlserializer@5.0.0:
     dependencies:
