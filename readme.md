@@ -1,4 +1,4 @@
-> 24/11/2026 (Thứ Ba)
+> 25/11/2026 (Thứ Tư)
 
 ![](https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg "")
 
