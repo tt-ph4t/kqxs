@@ -1,19 +1,21 @@
+![](https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg "")
+
 > 26/11/2026 (Thứ Năm)
 
-![](https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg "")
+> 7 ngày
 
 ## Tương quan chẵn lẻ
 
 |     | Chẵn | Lẻ  | Tổng |
 | --- | ---- | --- | ---- |
-| Miền Nam | 183 lượt (46.2%) | 213 lượt (53.8%) | 396 lượt |
-| Miền Trung | 152 lượt (49.7%) | 154 lượt (50.3%) | 306 lượt |
+| Miền Nam | 183 lượt (46.2%) | 213 lượt (53.8%) | 396 lượt (56.4%) |
+| Miền Trung | 152 lượt (49.7%) | 154 lượt (50.3%) | 306 lượt (43.6%) |
 | Tổng | 335 lượt (47.7%) | 367 lượt (52.3%) | 702 lượt |
 
 ## Tần suất
 
-| 695/695 số | Miền Nam | Miền Trung | Tổng (702 lượt) |
-| ---------- | -------- | ---------- | --------------- |
+| 695/695 số | Miền Nam | Miền Trung | Tổng |
+| ---------- | -------- | ---------- | ---- |
 | 🥇 35 | 3 lượt (0.8%) | 2 lượt (0.7%) | 5 lượt (0.7%) |
 | 🥈 71 | 2 lượt (0.5%) | 0 lượt | 2 lượt (0.3%) |
 | 🥉 74 | 1 lượt (0.3%) | 1 lượt (0.3%) | 2 lượt (0.3%) |
