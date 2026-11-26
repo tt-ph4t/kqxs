@@ -1,18 +1,16 @@
 ![](https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg "")
 
-> 26/11/2026 (Thứ Năm)
+> Cập nhật lần cuối: 26/11/2026 (Thứ Năm)
+
+# Tần suất
 
 > Thống kê trong 7 ngày
-
-## Tương quan chẵn lẻ
 
 |     | Chẵn | Lẻ  | Tổng |
 | --- | ---- | --- | ---- |
 | Miền Nam | 183 lượt (46.2%) | 213 lượt (53.8%) | 396 lượt (56.4%) |
 | Miền Trung | 152 lượt (49.7%) | 154 lượt (50.3%) | 306 lượt (43.6%) |
 | Tổng | 335 lượt (47.7%) | 367 lượt (52.3%) | 702 lượt |
-
-## Tần suất
 
 | 695/695 số | Miền Nam | Miền Trung | Tổng |
 | ---------- | -------- | ---------- | ---- |
