@@ -2,7 +2,7 @@
 
 > 26/11/2026 (Thứ Năm)
 
-> 7 ngày
+> Thống kê trong 7 ngày
 
 ## Tương quan chẵn lẻ
 
