@@ -330,13 +330,13 @@ forEachRegion(({ data, meta, dir }) => {
         },
       },
       {
-        blockquote: displayDate(),
+        blockquote: `Cập nhật lần cuối: ${displayDate()}`,
+      },
+      {
+        h1: "Tần suất",
       },
       {
         blockquote: `Thống kê trong ${prettyNum(dates.length)} ngày`,
-      },
-      {
-        h2: "Tương quan chẵn lẻ",
       },
       {
         table: {
@@ -364,9 +364,6 @@ forEachRegion(({ data, meta, dir }) => {
             ],
           ],
         },
-      },
-      {
-        h2: "Tần suất",
       },
       {
         table: {
