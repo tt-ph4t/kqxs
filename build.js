@@ -333,7 +333,7 @@ forEachRegion(({ data, meta, dir }) => {
         blockquote: displayDate(),
       },
       {
-        blockquote: `${prettyNum(dates.length)} ngày`,
+        blockquote: `Thống kê trong ${prettyNum(dates.length)} ngày`,
       },
       {
         h2: "Tương quan chẵn lẻ",
