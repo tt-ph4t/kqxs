@@ -64,17 +64,35 @@ const regionLabels = {
   "mien-trung": "miền Trung",
 };
 
-const prizeLabels = {
-  8: "Giải tám",
-  7: "Giải bảy",
-  6: "Giải sáu",
-  5: "Giải năm",
-  4: "Giải tư",
-  3: "Giải ba",
-  2: "Giải nhì",
-  1: "Giải nhất",
-  db: "Giải Đặc Biệt",
-};
+const prizeOrder = [8, 7, 6, 5, 4, 3, 2, 1, "db"].map(String);
+
+const prizeLabels = valibot.parse(
+  valibot.record(valibot.picklist(prizeOrder), valibot.string()),
+  {
+    8: "Giải tám",
+    7: "Giải bảy",
+    6: "Giải sáu",
+    5: "Giải năm",
+    4: "Giải tư",
+    3: "Giải ba",
+    2: "Giải nhì",
+    1: "Giải nhất",
+    db: "Giải Đặc Biệt",
+  },
+);
+
+const dailyLotteryResultsSchema = valibot.array(
+  valibot.strictObject({
+    province: valibot.pipe(valibot.string(), valibot.minLength(1)),
+    provinceCode: valibot.pipe(valibot.string(), valibot.minLength(1)),
+    prizes: valibot.record(
+      valibot.picklist(prizeOrder),
+      valibot.array(valibot.pipe(valibot.string(), valibot.minLength(1))),
+    ),
+  }),
+);
+
+const dataSchema = valibot.record(valibot.string(), dailyLotteryResultsSchema);
 
 const forEachRegion = (fn = noop) => {
   pipe(
@@ -87,7 +105,9 @@ const forEachRegion = (fn = noop) => {
       const parsedPath = path.posix.parse(a);
 
       fn({
-        data: pipe(a, readFileSync, JSON.parse),
+        data: pipe(a, readFileSync, JSON.parse, (a) =>
+          valibot.parse(dataSchema, a),
+        ),
         meta: pipe(
           path.join(parsedPath.dir, "meta.json"),
           readFileSync,
@@ -101,21 +121,6 @@ const forEachRegion = (fn = noop) => {
 };
 
 {
-  const schema = valibot.array(
-    valibot.strictObject({
-      tinh: valibot.pipe(valibot.string(), valibot.minLength(1)),
-      "ma-tinh": valibot.pipe(valibot.string(), valibot.minLength(1)),
-      "cac-giai": valibot.array(
-        valibot.strictObject({
-          giai: valibot.picklist(Object.keys(prizeLabels)),
-          "cac-so-trung-thuong": valibot.array(
-            valibot.pipe(valibot.string(), valibot.minLength(1)),
-          ),
-        }),
-      ),
-    }),
-  );
-
   const playwrightCrawler = new PlaywrightCrawler({
     async requestHandler({ request, page }) {
       const boxKqxsLocator = page.locator(".box_kqxs").first();
@@ -144,25 +149,26 @@ const forEachRegion = (fn = noop) => {
       if (fs.existsSync(dataPath)) {
         const _data = readFileSync(dataPath);
 
-        if (_data.length) data = JSON.parse(_data);
+        if (_data.length)
+          data = pipe(_data, JSON.parse, (a) => valibot.parse(dataSchema, a));
       }
 
       data[displayDate(date, false)] = valibot.parse(
-        schema,
+        dailyLotteryResultsSchema,
         await boxKqxsLocator.locator("table.rightcl").evaluateAll((elements) =>
           elements.map((element) => ({
-            tinh: element.querySelector("td.tinh").textContent.trim(),
-            "ma-tinh": element.querySelector("td.matinh").textContent.trim(),
-            "cac-giai": Array.from(
+            province: element.querySelector("td.tinh").textContent.trim(),
+            provinceCode: element.querySelector("td.matinh").textContent.trim(),
+            prizes: Array.from(
               element.querySelectorAll("td[class^=giai]"),
-              (element) => ({
-                giai: element.className.split("giai")[1],
-                "cac-so-trung-thuong": Array.from(
-                  element.querySelectorAll(".giaiSo"),
-                  (element) => element.getAttribute("data"),
-                ),
-              }),
-            ),
+            ).reduce((a, b) => {
+              a[b.className.split("giai")[1]] = Array.from(
+                b.querySelectorAll(".giaiSo"),
+                (element) => element.getAttribute("data"),
+              );
+
+              return a;
+            }, {}),
           })),
         ),
       );
@@ -214,21 +220,19 @@ forEachRegion(({ data, meta, dir }) => {
                 headers: [
                   displayDate(a),
                   ...b.map(
-                    ({ tinh, ["ma-tinh"]: maTinh }) => `${tinh} (${maTinh})`,
+                    ({ province, provinceCode }) =>
+                      `${province} (${provinceCode})`,
                   ),
                 ],
-                rows: b[0]["cac-giai"].map(({ giai }) => [
-                  prizeLabels[giai],
-                  ...b.map(({ ["cac-giai"]: cacGiai }) => {
-                    const { ["cac-so-trung-thuong"]: cacSoTrungThuong } =
-                      cacGiai.find(({ giai: _giai }) => _giai === giai);
-
-                    return pipe(
-                      cacSoTrungThuong,
+                rows: prizeOrder.map((prize) => [
+                  prizeLabels[prize],
+                  ...b.map(({ prizes }) =>
+                    pipe(
+                      prizes[prize],
                       map((a) => `\`${a}\``),
                       join(" "),
-                    );
-                  }),
+                    ),
+                  ),
                 ]),
               },
             },
@@ -252,17 +256,11 @@ forEachRegion(({ data, meta, dir }) => {
 
   const numbersByRegion = {};
 
-  forEachRegion(({ region, data: _data }) => {
+  forEachRegion(({ region, data }) => {
     numbersByRegion[region] = pipe(
-      _data,
+      data,
       Object.values,
-      flatMapDeep((a) =>
-        a.map(({ ["cac-giai"]: cacGiai }) =>
-          cacGiai.map(
-            ({ ["cac-so-trung-thuong"]: cacSoTrungThuong }) => cacSoTrungThuong,
-          ),
-        ),
-      ),
+      flatMapDeep((a) => a.map(({ prizes }) => Object.values(prizes))),
     );
   });
 
