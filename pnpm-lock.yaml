@@ -26,6 +26,9 @@ importers:
       playwright:
         specifier: 1.65.1
         version: 1.65.1
+      pretty-num:
+        specifier: 0.6.2
+        version: 0.6.2
       valibot:
         specifier: 1.5.0
         version: 1.5.0
@@ -612,6 +615,9 @@ packages:
     resolution: {integrity: sha512-G6NsmEW15s0Uw9XnCg+33H3ViYRyiM0hMrMhhqQOR8NFc5GhYrI+6I3u7OTw7b91J2g8rtvMBZJDbcGb2YUniw==}
     engines: {node: '>= 18'}
 
+  from-exponential@1.1.1:
+    resolution: {integrity: sha512-VBE7f5OVnYwdgB3LHa+Qo29h8qVpxhVO9Trlc+AWm+/XNAgks1tAwMFHb33mjeiof77GglsJzeYF7OqXrROP/A==}
+
   from@0.1.7:
     resolution: {integrity: sha512-twe20eF1OxVxp/ML/kq2p1uc6KvFK/+vs8WjEbeKmV2He22MKm7YF2ANIt+EOqhJ5L3K/SuuPhk0hWQDjOM23g==}
 
@@ -976,6 +982,9 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
+  pretty-num@0.6.2:
+    resolution: {integrity: sha512-6DDkpdIcLbpm5965BRz3LsGW0MCdKh8HFcXQvoGxOwNdB7WB3Vvon4uuPE2ACJuj8tCO5yxIA2woLuowni9eZQ==}
+
   proper-lockfile@4.1.2:
     resolution: {integrity: sha512-TjNPblN4BwAWMXU8s9AEz4JmQxnD1NNL7bNOY/AKUzyamc379FWASUhc/K1pL2noVb+XmZKLL68cjzLsiOAMaA==}
 
@@ -1134,6 +1143,9 @@ packages:
 
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
+
+  thousands@1.0.1:
+    resolution: {integrity: sha512-Di+gdTXx6Xm6ST/XJqqp1Y7N+SnA1WAfrjABCnVvFi3ao6cqkV/wMfxQXJaxJ0qw/L05GVjPP6DKigdkCwnGNg==}
 
   through@2.3.8:
     resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
@@ -2030,6 +2042,8 @@ snapshots:
 
   form-data-encoder@4.1.0: {}
 
+  from-exponential@1.1.1: {}
+
   from@0.1.7: {}
 
   fs-extra@11.4.1:
@@ -2443,6 +2457,11 @@ snapshots:
     dependencies:
       playwright-core: 1.65.1
 
+  pretty-num@0.6.2:
+    dependencies:
+      from-exponential: 1.1.1
+      thousands: 1.0.1
+
   proper-lockfile@4.1.2:
     dependencies:
       graceful-fs: 4.2.12
@@ -2588,6 +2607,8 @@ snapshots:
       has-flag: 4.0.0
 
   symbol-tree@3.2.4: {}
+
+  thousands@1.0.1: {}
 
   through@2.3.8: {}
 

@@ -31,12 +31,19 @@ import fg from "fast-glob";
 import json2md from "json2md";
 import fs from "node:fs";
 import path from "node:path";
+import _prettyNum from "pretty-num";
 import * as valibot from "valibot";
 
 const locale = "vi-VN";
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
 const medals = ["🥇", "🥈", "🥉"];
 const stringify = flow(sortKeys, JSON.stringify);
+
+const prettyNum = (value, ...options) =>
+  _prettyNum(value, {
+    thousandsSeparator: " ",
+    ...options,
+  });
 
 const displayDate = (date = new Date(), weekday = true) => {
   if (isString(date)) date = parseDate(date);
@@ -244,15 +251,19 @@ forEachRegion(({ data, meta, dir }) => {
 });
 
 {
-  const frequencyUnit = "lượt";
+  const formatFrequency = (a, b, unit = "lượt") => {
+    const label = `${prettyNum(a)} ${unit}`;
 
-  const formatFrequency = (a, b, unit = frequencyUnit) => {
-    const label = `${a} ${unit}`;
-
-    if (a) return `${label} (${round((a / b) * 100, 1)}%)`;
+    if (a && b) return `${label} (${round((a / b) * 100, 1)}%)`;
 
     return label;
   };
+
+  let dates = [];
+
+  forEachRegion(({ data }) => {
+    dates = pipe(data, Object.keys, (a) => union(a, dates));
+  });
 
   const numbersByRegion = {};
 
@@ -313,13 +324,16 @@ forEachRegion(({ data, meta, dir }) => {
     "readme.md",
     json2md([
       {
-        blockquote: displayDate(),
-      },
-      {
         img: {
           source:
             "https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg",
         },
+      },
+      {
+        blockquote: displayDate(),
+      },
+      {
+        blockquote: `${prettyNum(dates.length)} ngày`,
       },
       {
         h2: "Tương quan chẵn lẻ",
@@ -338,7 +352,7 @@ forEachRegion(({ data, meta, dir }) => {
                   startCase(regionLabels[a]),
                   formatFrequency(b.even, total),
                   formatFrequency(b.odd, total),
-                  `${total} ${frequencyUnit}`,
+                  formatFrequency(total, data3_3),
                 ];
               }),
             ),
@@ -346,7 +360,7 @@ forEachRegion(({ data, meta, dir }) => {
               "Tổng",
               formatFrequency(data3_2.even, data3_3),
               formatFrequency(data3_2.odd, data3_3),
-              `${data3_3} ${frequencyUnit}`,
+              formatFrequency(data3_3),
             ],
           ],
         },
@@ -357,14 +371,14 @@ forEachRegion(({ data, meta, dir }) => {
       {
         table: {
           headers: [
-            `${maxRows}/${rowCount} số`,
+            `${prettyNum(maxRows)}/${prettyNum(rowCount)} số`,
             ...pipe(
               frequencyByRegion,
               Object.keys,
               map((a) => regionLabels[a]),
               map(startCase),
             ),
-            `Tổng (${totalFrequency} ${frequencyUnit})`,
+            "Tổng",
           ],
           rows: pipe(
             frequencyByRegion,
