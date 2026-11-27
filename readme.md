@@ -1,4 +1,4 @@
-![](https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg "")
+![](https://github.com/tt-ph4t/kqxs/actions/workflows/daily-build.yml/badge.svg "")
 
 > Cập nhật lần cuối: 27/11/2026 (Thứ Sáu)
 
