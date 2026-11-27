@@ -217,7 +217,7 @@ forEachRegion(({ data, meta, dir }) => {
       {
         img: {
           source:
-            "https://github.com/tt-ph4t/kqxs/actions/workflows/build.yml/badge.svg",
+            "https://github.com/tt-ph4t/kqxs/actions/workflows/daily-build.yml/badge.svg",
         },
       },
       {
