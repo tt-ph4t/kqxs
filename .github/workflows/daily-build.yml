@@ -1,0 +1,29 @@
+name: daily build
+
+on:
+  push:
+  workflow_dispatch:
+
+  schedule:
+    - cron: 0 20 * * *
+      timezone: Asia/Ho_Chi_Minh
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/setup@v1
+        with:
+          version: 12
+          runtime: node@latest
+
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec node scripts/daily-build
+
+      - uses: stefanzweifel/git-auto-commit-action@v7

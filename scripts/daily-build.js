@@ -1,14 +1,11 @@
 import { readFileSync, writeFileSync } from "atomically";
 import { PlaywrightCrawler } from "crawlee";
 import {
-  flow,
   identity,
-  isString,
   last,
   mapValues,
   noop,
   round,
-  sortKeys,
   startCase,
   sum,
   union,
@@ -29,49 +26,20 @@ import {
 import { reduce } from "es-toolkit/fp/iterator";
 import fg from "fast-glob";
 import json2md from "json2md";
-import fs from "node:fs";
 import path from "node:path";
-import _prettyNum from "pretty-num";
 import * as valibot from "valibot";
+import build from "./_build.js";
+import {
+  dataSchema,
+  displayDate,
+  locale,
+  parseDate,
+  prettyNum,
+  prizeOrder,
+  regionLabels,
+} from "./misc.js";
 
-const locale = "vi-VN";
-const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
 const medals = ["🥇", "🥈", "🥉"];
-const stringify = flow(sortKeys, JSON.stringify);
-
-const prettyNum = (value, ...options) =>
-  _prettyNum(value, {
-    thousandsSeparator: " ",
-    ...options,
-  });
-
-const displayDate = (date = new Date(), weekday = true) => {
-  if (isString(date)) date = parseDate(date);
-
-  const _date = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-
-  if (weekday)
-    return `${_date} (${date.toLocaleDateString(locale, {
-      weekday: "long",
-    })})`;
-
-  return _date;
-};
-
-const parseDate = (value) =>
-  pipe(
-    value,
-    (a) => a.split("/"),
-    map(Number),
-    ([date, month, year]) => new Date(year, month - 1, date),
-  );
-
-const regionLabels = {
-  "mien-nam": "miền Nam",
-  "mien-trung": "miền Trung",
-};
-
-const prizeOrder = [8, 7, 6, 5, 4, 3, 2, 1, "db"].map(String);
 
 const prizeLabels = valibot.parse(
   valibot.record(valibot.picklist(prizeOrder), valibot.string()),
@@ -87,19 +55,6 @@ const prizeLabels = valibot.parse(
     db: "Giải Đặc Biệt",
   },
 );
-
-const dailyLotteryResultsSchema = valibot.array(
-  valibot.strictObject({
-    province: valibot.pipe(valibot.string(), valibot.minLength(1)),
-    provinceCode: valibot.pipe(valibot.string(), valibot.minLength(1)),
-    prizes: valibot.record(
-      valibot.picklist(prizeOrder),
-      valibot.array(valibot.pipe(valibot.string(), valibot.minLength(1))),
-    ),
-  }),
-);
-
-const dataSchema = valibot.record(valibot.string(), dailyLotteryResultsSchema);
 
 const forEachRegion = (fn = noop) => {
   pipe(
@@ -129,75 +84,10 @@ const forEachRegion = (fn = noop) => {
 
 {
   const playwrightCrawler = new PlaywrightCrawler({
-    async requestHandler({ request, page }) {
-      const boxKqxsLocator = page.locator(".box_kqxs").first();
-
-      const date = parseDate(
-        await boxKqxsLocator.locator(".top .title a").nth(1).textContent(),
-      );
-
-      await boxKqxsLocator.locator(".giaiSo").first().waitFor();
-
-      const region = new URL(request.url).pathname
-        .split("/")
-        .at(-1)
-        .replace(".html", "");
-
-      const dir = path.join(region, String(date.getFullYear()));
-
-      fs.mkdirSync(dir, {
-        recursive: true,
-      });
-
-      const dataPath = path.join(dir, "data.json");
-
-      let data = {};
-
-      if (fs.existsSync(dataPath)) {
-        const _data = readFileSync(dataPath);
-
-        if (_data.length)
-          data = pipe(_data, JSON.parse, (a) => valibot.parse(dataSchema, a));
-      }
-
-      data[displayDate(date, false)] = valibot.parse(
-        dailyLotteryResultsSchema,
-        await boxKqxsLocator.locator("table.rightcl").evaluateAll((elements) =>
-          elements.map((element) => ({
-            province: element.querySelector("td.tinh").textContent.trim(),
-            provinceCode: element.querySelector("td.matinh").textContent.trim(),
-            prizes: Array.from(
-              element.querySelectorAll("td[class^=giai]"),
-            ).reduce((a, b) => {
-              a[b.className.split("giai")[1]] = Array.from(
-                b.querySelectorAll(".giaiSo"),
-                (element) => element.getAttribute("data"),
-              );
-
-              return a;
-            }, {}),
-          })),
-        ),
-      );
-
-      writeFileSync(dataPath, stringify(data));
-
-      writeFileSync(
-        path.join(dir, "meta.json"),
-        stringify({
-          title: `Kết quả xổ số ${regionLabels[region]} (${date.getFullYear()})`,
-        }),
-      );
-    },
+    requestHandler: build,
   });
 
-  await playwrightCrawler.run(
-    pipe(
-      regionLabels,
-      Object.keys,
-      map((a) => `${url}/${a}.html`),
-    ),
-  );
+  await playwrightCrawler.run(build.requests);
 }
 
 forEachRegion(({ data, meta, dir }) => {
@@ -272,6 +162,7 @@ forEachRegion(({ data, meta, dir }) => {
       data,
       Object.values,
       flatMapDeep((a) => a.map(({ prizes }) => Object.values(prizes))),
+      (a) => [...(numbersByRegion[region] ?? []), ...a],
     );
   });
 
