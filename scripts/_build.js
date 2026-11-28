@@ -46,25 +46,32 @@ export default Object.assign(
           data = pipe(_data, JSON.parse, (a) => valibot.parse(DATA_SCHEMA, a));
       }
 
-      data[displayDate(date, false)] = valibot.parse(
+      const _data = valibot.safeParse(
         LOTTERY_RESULTS_SCHEMA,
-        await boxKqxsLocator.locator("table.rightcl").evaluateAll((elements) =>
-          elements.map((element) => ({
-            province: element.querySelector("td.tinh").textContent.trim(),
-            provinceCode: element.querySelector("td.matinh").textContent.trim(),
-            prizes: Array.from(
-              element.querySelectorAll("td[class^=giai]"),
-            ).reduce((a, b) => {
-              a[b.className.split("giai")[1]] = Array.from(
-                b.querySelectorAll(".giaiSo"),
-                (element) => element.getAttribute("data"),
-              );
+        await boxKqxsLocator.locator("table.rightcl").evaluateAll((a) =>
+          a.map((a) => ({
+            province: a.querySelector("td.tinh").textContent.trim(),
+            provinceCode: a.querySelector("td.matinh").textContent.trim(),
+            prizes: Array.from(a.querySelectorAll("td[class^=giai]")).reduce(
+              (a, b) => {
+                a[b.className.split("giai")[1]] = Array.from(
+                  b.querySelectorAll(".giaiSo"),
+                  (a) => a.getAttribute("data"),
+                )
+                  // https://es-toolkit.dev/fp/reference/compact.html
+                  .filter(Boolean);
 
-              return a;
-            }, {}),
+                return a;
+              },
+              {},
+            ),
           })),
         ),
       );
+
+      if (!_data.success) continue;
+
+      data[displayDate(date, false)] = _data.output;
 
       writeFileSync(dataPath, stringify(data));
 
