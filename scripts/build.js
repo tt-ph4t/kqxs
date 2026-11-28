@@ -11,7 +11,7 @@ const playwrightCrawler = new PlaywrightCrawler({
     },
   ],
   async requestHandler({ request, page, enqueueLinks }) {
-    console.log(await page.title());
+    console.log(request);
 
     await build({
       request,

@@ -5,11 +5,11 @@ import fs from "node:fs";
 import path from "node:path";
 import * as valibot from "valibot";
 import {
-  dataSchema,
+  DATA_SCHEMA,
   displayDate,
-  lotteryResultsSchema,
+  LOTTERY_RESULTS_SCHEMA,
   parseDate,
-  regionLabels,
+  REGION_LABELS,
 } from "./misc.js";
 
 const url = new URL("https://www.minhngoc.net.vn/ket-qua-xo-so");
@@ -18,9 +18,11 @@ const stringify = flow(sortKeys, JSON.stringify);
 export default Object.assign(
   async ({ request, page }) => {
     for (const boxKqxsLocator of await page.locator(".box_kqxs").all()) {
-      const date = parseDate(
-        await boxKqxsLocator.locator(".top .title a").nth(1).textContent(),
-      );
+      const title = await boxKqxsLocator.locator(".top .title").textContent();
+
+      console.log(title);
+
+      const date = parseDate(title.split(" - ")[1]);
 
       await boxKqxsLocator.locator(".giaiSo").first().waitFor();
 
@@ -41,11 +43,11 @@ export default Object.assign(
         const _data = readFileSync(dataPath);
 
         if (_data.length)
-          data = pipe(_data, JSON.parse, (a) => valibot.parse(dataSchema, a));
+          data = pipe(_data, JSON.parse, (a) => valibot.parse(DATA_SCHEMA, a));
       }
 
       data[displayDate(date, false)] = valibot.parse(
-        lotteryResultsSchema,
+        LOTTERY_RESULTS_SCHEMA,
         await boxKqxsLocator.locator("table.rightcl").evaluateAll((elements) =>
           elements.map((element) => ({
             province: element.querySelector("td.tinh").textContent.trim(),
@@ -69,14 +71,14 @@ export default Object.assign(
       writeFileSync(
         path.join(dir, "meta.json"),
         stringify({
-          title: `Kết quả xổ số ${regionLabels[request.userData.region]} (${date.getFullYear()})`,
+          title: `Kết quả xổ số ${REGION_LABELS[request.userData.region]} (${date.getFullYear()})`,
         }),
       );
     }
   },
   {
     requests: pipe(
-      regionLabels,
+      REGION_LABELS,
       Object.keys,
       map((a) => ({
         url: `${url}/${a}.html`,

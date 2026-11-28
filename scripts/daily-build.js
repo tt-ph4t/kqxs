@@ -30,19 +30,19 @@ import path from "node:path";
 import * as valibot from "valibot";
 import build from "./_build.js";
 import {
-  dataSchema,
+  DATA_SCHEMA,
   displayDate,
-  locale,
+  LOCALE,
   parseDate,
   prettyNum,
-  prizeOrder,
-  regionLabels,
+  PRIZE_ORDER,
+  REGION_LABELS,
 } from "./misc.js";
 
 const medals = ["🥇", "🥈", "🥉"];
 
 const prizeLabels = valibot.parse(
-  valibot.record(valibot.picklist(prizeOrder), valibot.string()),
+  valibot.record(valibot.picklist(PRIZE_ORDER), valibot.string()),
   {
     8: "Giải tám",
     7: "Giải bảy",
@@ -61,14 +61,14 @@ const forEachRegion = (fn = noop) => {
     "**/data.json",
     fg.sync,
     filter((a) =>
-      Object.keys(regionLabels).some((region) => a.startsWith(`${region}/`)),
+      Object.keys(REGION_LABELS).some((region) => a.startsWith(`${region}/`)),
     ),
     forEach((a) => {
       const parsedPath = path.posix.parse(a);
 
       fn({
         data: pipe(a, readFileSync, JSON.parse, (a) =>
-          valibot.parse(dataSchema, a),
+          valibot.parse(DATA_SCHEMA, a),
         ),
         meta: pipe(
           path.join(parsedPath.dir, "meta.json"),
@@ -121,7 +121,7 @@ forEachRegion(({ data, meta, dir }) => {
                       `${province} (${provinceCode})`,
                   ),
                 ],
-                rows: prizeOrder.map((prize) => [
+                rows: PRIZE_ORDER.map((prize) => [
                   prizeLabels[prize],
                   ...b.map(({ prizes }) =>
                     pipe(
@@ -240,7 +240,7 @@ forEachRegion(({ data, meta, dir }) => {
                 const total = pipe(b, Object.values, sum);
 
                 return [
-                  startCase(regionLabels[a]),
+                  startCase(REGION_LABELS[a]),
                   formatFrequency(b.even, total),
                   formatFrequency(b.odd, total),
                   formatFrequency(total, data3_3),
@@ -263,7 +263,7 @@ forEachRegion(({ data, meta, dir }) => {
             ...pipe(
               frequencyByRegion,
               Object.keys,
-              map((a) => regionLabels[a]),
+              map((a) => REGION_LABELS[a]),
               map(startCase),
             ),
             "Tổng",
@@ -298,11 +298,11 @@ forEachRegion(({ data, meta, dir }) => {
             (a) =>
               a.sort(
                 (a, b) =>
-                  last(b).localeCompare(last(a), locale, {
+                  last(b).localeCompare(last(a), LOCALE, {
                     numeric: true,
                     sensitivity: "base",
                   }) ||
-                  a[0].localeCompare(b[0], locale, {
+                  a[0].localeCompare(b[0], LOCALE, {
                     numeric: true,
                     sensitivity: "base",
                   }),
