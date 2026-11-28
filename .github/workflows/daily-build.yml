@@ -1,5 +1,3 @@
-name: daily build
-
 on:
   push:
   workflow_dispatch:
@@ -13,17 +11,6 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/setup@v1
-        with:
-          version: 12
-          runtime: node@latest
-
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm exec node scripts/daily-build
-
-      - uses: stefanzweifel/git-auto-commit-action@v7
+    uses: ./.github/workflows/setup.yml
+    with:
+      script: daily-build

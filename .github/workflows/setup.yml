@@ -1,0 +1,25 @@
+on:
+  workflow_call:
+    inputs:
+      script:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/setup@v1
+        with:
+          version: 12
+          runtime: node@latest
+
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec node scripts/${{ inputs.script }}
+      - uses: stefanzweifel/git-auto-commit-action@v7
