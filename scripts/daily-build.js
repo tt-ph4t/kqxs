@@ -231,7 +231,7 @@ forEachRegion(({ data, meta, dir }) => {
         blockquote: `Thống kê trong ${Duration.fromObject({
           days: dates.length,
         })
-          .shiftTo("years", "days")
+          .shiftTo("years", "months", "days")
           .reconfigure({
             locale: LOCALE,
           })
