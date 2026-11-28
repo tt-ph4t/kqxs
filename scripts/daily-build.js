@@ -26,6 +26,7 @@ import {
 import { reduce } from "es-toolkit/fp/iterator";
 import fg from "fast-glob";
 import json2md from "json2md";
+import { Duration } from "luxon";
 import path from "node:path";
 import * as valibot from "valibot";
 import build from "./_build.js";
@@ -227,7 +228,16 @@ forEachRegion(({ data, meta, dir }) => {
         h1: "Tần suất",
       },
       {
-        blockquote: `Thống kê trong ${prettyNum(dates.length)} ngày`,
+        blockquote: `Thống kê trong ${Duration.fromObject({
+          days: dates.length,
+        })
+          .shiftTo("years", "days")
+          .reconfigure({
+            locale: LOCALE,
+          })
+          .toHuman({
+            showZeros: false,
+          })}`,
       },
       {
         table: {
