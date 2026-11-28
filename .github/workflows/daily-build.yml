@@ -6,6 +6,9 @@ on:
     - cron: 0 20 * * *
       timezone: Asia/Ho_Chi_Minh
 
+permissions:
+  contents: write
+
 jobs:
   build:
     uses: ./.github/workflows/setup.yml
