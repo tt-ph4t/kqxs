@@ -1,0 +1,8 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/setup.yml
+    with:
+      script: build
